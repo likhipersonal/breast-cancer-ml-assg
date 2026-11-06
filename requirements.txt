@@ -1,7 +1,6 @@
 streamlit
 scikit-learn
-numpy
 pandas
+numpy
 matplotlib
 seaborn
-pyarrow<20
