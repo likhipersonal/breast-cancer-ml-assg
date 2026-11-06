@@ -1,45 +1,100 @@
-# Breast Cancer Diagnostic Analysis & Cloud Deployment Pipeline
+# Breast Cancer Diagnosis: Classification Models & Streamlit Deployment
+
+**Live Streamlit App:** [PASTE YOUR STREAMLIT COMMUNITY CLOUD LINK HERE]
+**GitHub Repository:** https://github.com/likhipersonal/breast-cancer-ml-assg
+
+---
 
 ## a. Problem Statement
-The objective of this assignment is to design a high-accuracy, real-world machine learning classification and deployment architecture. Using cellular metric dimensions, the task is to classify biopsy cases as Malignant or Benign without re-training models during cloud validation cycles.
+
+Early and accurate diagnosis of breast cancer is critical. Given measurements computed from a digitised image of a fine-needle aspirate (FNA) of a breast mass, the task is to classify each case as **Malignant (0)** or **Benign (1)**.
+
+This is a binary classification problem. Five classification models are trained on the same dataset and compared using six evaluation metrics. The trained models are saved and served through a Streamlit web app, which evaluates them on an uploaded test CSV **without retraining**.
 
 ## b. Dataset Description
-* **Dataset Name:** Breast Cancer Wisconsin (Diagnostic) Dataset (UCI Machine Learning Repository / Kaggle).
-* **Total Instances:** 569 instances
-* **Total Feature Count:** 30 continuous clinical modeling features
-* **Key Features Include:**
-  1. `radius_mean`: Mean of distances from center to points on the perimeter.
-  2. `texture_mean`: Standard deviation of gray-scale values.
-  3. `perimeter_mean`: Mean size of the core tumor perimeter.
-  4. `area_mean`: Mean area space of cell nucleus.
-  5. `smoothness_mean`: Mean of local variation in radius lengths.
-  6. `compactness_mean`: perimeter^2 / area - 1.0.
-  7. `concavity_mean`: Severity of concave portions of the contour.
-  8. `concave points_mean`: Number of concave portions of the contour.
-  9. `symmetry_mean`: Geometric balance index.
-  10. `fractal_dimension_mean`: "coastline approximation" - 1.
-  *(Includes corresponding standard error 'se' and 'worst' maximized measurements across all 10 base parameters, totaling 30 distinct features).*
-* **Target Label:** `target` (0: Malignant, 1: Benign).
 
-## c. GitHub Repository Link
-[Insert Your Live GitHub Repository Link URL Here]
+| Item | Details |
+|---|---|
+| Dataset | Breast Cancer Wisconsin (Diagnostic) |
+| Source | UCI Machine Learning Repository (loaded through `sklearn.datasets.load_breast_cancer`) |
+| Instances | 569 (357 Benign, 212 Malignant) |
+| Features | 30 numeric features, no missing values |
+| Target | `target`: 0 = Malignant, 1 = Benign |
+| Train / Test split | 70% / 30% (`random_state=42`): 398 training rows, 171 test rows |
 
-## d. Models Used & Comparison Metrics
+Ten real-valued measurements are computed for each cell nucleus: radius, texture, perimeter, area, smoothness, compactness, concavity, concave points, symmetry and fractal dimension. For each one, three values are stored: the **mean**, the **standard error** and the **worst** (largest) value. This gives 3 × 10 = 30 features. Example column names in `test_data.csv`: `mean radius`, `radius error`, `worst radius`.
+
+**Preprocessing:** features are standardised with `StandardScaler`, fitted on the training set only. The fitted scaler is saved as `model/scaler.pkl` and reused by the app.
+
+## c. Repository Structure
+
+```
+breast-cancer-ml-assg/
+│-- app.py              # Streamlit application
+│-- train.py            # Trains the 5 models, saves them, creates test_data.csv
+│-- requirements.txt    # Dependencies
+│-- README.md
+│-- test_data.csv       # Held-out test set (171 rows, 30 features + target)
+│-- model/
+    │-- scaler.pkl
+    │-- logistic_regression.pkl
+    │-- decision_tree.pkl
+    │-- knn.pkl
+    │-- naive_bayes.pkl
+    │-- support_vector_machine.pkl
+```
+
+**Run locally**
+
+```bash
+pip install -r requirements.txt
+python train.py          # optional: regenerates model/ and test_data.csv
+streamlit run app.py
+```
+
+**Streamlit app features**
+- Upload a test CSV (it must contain the 30 features and the `target` column)
+- Dropdown to choose one of the 5 models
+- Accuracy, AUC, Precision, Recall, F1 and MCC for the chosen model
+- Confusion matrix and classification report
+- A tab comparing all 5 models on the uploaded data
+
+## d. Models Used
+
+All models use the same train/test split and the same scaled features.
+
+| Model | Configuration |
+|---|---|
+| Logistic Regression | `max_iter=10000` |
+| Decision Tree | `max_depth=5` |
+| K-Nearest Neighbors | `n_neighbors=5` |
+| Naive Bayes | Gaussian |
+| Support Vector Machine | RBF kernel, `probability=True` |
+
+### Comparison Table (171-row test set)
 
 | ML Model Name | Accuracy | AUC | Precision | Recall | F1 | MCC |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Logistic Regression** | 0.9825 | 0.9977 | 0.9815 | 0.9907 | 0.9860 | 0.9626 |
-| **Decision Tree** | 0.9415 | 0.9406 | 0.9533 | 0.9533 | 0.9533 | 0.8762 |
-| **K-Nearest Neighbor** | 0.9591 | 0.9890 | 0.9554 | 0.9813 | 0.9682 | 0.9127 |
-| **Naive Bayes** | 0.9357 | 0.9877 | 0.9364 | 0.9626 | 0.9493 | 0.8629 |
-| **Support Vector Machine** | 0.9766 | 0.9974 | 0.9725 | 0.9907 | 0.9815 | 0.9503 |
+|---|---|---|---|---|---|---|
+| Logistic Regression | 0.9825 | 0.9979 | 0.9907 | 0.9815 | 0.9860 | 0.9625 |
+| Decision Tree | 0.9532 | 0.9367 | 0.9630 | 0.9630 | 0.9630 | 0.8995 |
+| KNN | 0.9591 | 0.9787 | 0.9633 | 0.9722 | 0.9677 | 0.9118 |
+| Naive Bayes | 0.9357 | 0.9927 | 0.9450 | 0.9537 | 0.9493 | 0.8614 |
+| Support Vector Machine | 0.9766 | 0.9966 | 0.9815 | 0.9815 | 0.9815 | 0.9497 |
 
-### Performance Observations
-* **Logistic Regression:** Achieves phenomenal performance on this scaled dataset. Linear boundaries cleanly split high-dimensional cancer features, yielding a near-perfect MCC score of 0.9626.
-* **Decision Tree:** Separates features well but exhibits slightly lower test numbers due to typical rigid axis-aligned decision splitting, making it more prone to boundary variance.
-* **KNN:** Captures neighborhood similarities effectively. It yields strong metrics across all categories, showing that similar tissue properties cluster tightly together.
-* **Naive Bayes:** Shows solid baseline robustness but trails slightly because features like radius, perimeter, and area are highly correlated, which conflicts with Naive Bayes' assumption of independent features.
-* **Support Vector Machine:** Excellent results due to robust margin maximizing features. It matches the top models closely with an outstanding 0.9974 AUC rating.
+### Observations
 
-### Overall Winner for Dataset
-**Logistic Regression** is the overall winner for this specific dataset. It achieves the highest **Accuracy (98.25%)**, **F1-Score (0.9860)**, and **MCC Score (0.9626)**, proving that a properly regularized linear surface is highly effective for high-dimensional diagnostic datasets.
+| ML Model Name | Observation about model performance |
+|---|---|
+| Logistic Regression | Best model on this dataset. Once the features are scaled, the two classes are almost linearly separable, so a linear boundary does very well. It has the highest accuracy, AUC, F1 and MCC, with only 3 mistakes out of 171 cases. |
+| Decision Tree | Weakest on AUC (0.9367). A single depth-5 tree outputs coarse probabilities, which hurts ranking quality, and axis-aligned splits struggle with the many correlated size features. Precision and recall are balanced, but MCC is clearly below the other models. |
+| KNN | Strong and consistent (accuracy 0.9591). It works well because similar tumours cluster together in scaled feature space. Its recall of 0.9722 means few malignant-vs-benign mix-ups. It is slightly behind LR and SVM, probably because the fixed k=5 is sensitive to the nearest few points. |
+| Naive Bayes | Lowest accuracy (0.9357) and MCC (0.8614), but a high AUC (0.9927), so its probability ranking is good while its default 0.5 cut-off is less accurate. Radius, perimeter and area are strongly correlated, which breaks the independence assumption of Naive Bayes. |
+| Support Vector Machine | Very close to Logistic Regression (accuracy 0.9766, AUC 0.9966, MCC 0.9497). The RBF kernel and margin maximisation give a smooth, robust boundary. It matches the top model on recall and is a good alternative. |
+
+### Overall Winner
+
+**Logistic Regression** is the best model for this dataset. It ranks first in Accuracy (0.9825), AUC (0.9979), Precision (0.9907), F1 (0.9860) and MCC (0.9625), and ties for first in Recall (0.9815) with the SVM. Because the classes are close to linearly separable after scaling, the simplest model generalises best here, and it is also the easiest to interpret.
+
+---
+
+*Note: this is an educational project and is not a medical diagnostic tool.*
